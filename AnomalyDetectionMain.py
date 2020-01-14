@@ -227,22 +227,26 @@ def plot_activation(img):
     plt.imshow(out, cmap='jet', alpha=0.35)
     plt.title('Crack' if pred_class == 1 else 'No Crack')
 
-
 # In[ ]:
 
 
-plot_activation(X_test[200] / 255)
+# plot_activation(X_test[200] / 255)
+#
+# # In[ ]:
+#
+#
+# plot_activation(X_test[100] / 255)
+#
+# # In[ ]:
+#
+#
+# plot_activation(X_test[134] / 255)
 
-# In[ ]:
+plot_activation(img_to_array(images[0])/255)
 
-
-plot_activation(X_test[100] / 255)
-
-# In[ ]:
-
-
-plot_activation(X_test[134] / 255)
-
+plot_activation(img_to_array(images[0])/255)
+plot_activation(img_to_array(images[0])/255)
+plot_activation(img_to_array(images[0])/255)
 # In[ ]:
 
 
