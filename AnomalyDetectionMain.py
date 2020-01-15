@@ -29,55 +29,49 @@ import itertools
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 
-# In[ ]:
-
-
-### SET COLAB ENVIROMENT ###
-
-# from google.colab import drive
-# drive.mount('/content/gdrive', force_remount=True)
-
 
 # In[ ]:
 
+def get_df(filename):
+    df = pd.read_json(filename, lines=True)
+    print(df.shape)
+    df.head()
+    return df
 
-### READ DATA ###
+def get_images(filename):
+    img_list = []
 
-df = pd.read_json('Crack.json', lines=True)
-df['label'] = df.annotation.apply(lambda x: x['labels'][0] if len(x['labels']) == 1 else 'Crack')
-print(df.shape)
-df.head()
+    data = get_df(filename)
 
-# In[ ]:
+    for url in tqdm.tqdm(data['content']):
+        response = requests.get(url)
+        img = Image.open(BytesIO(response.content))
+        img = img.resize((224, 224))
+        numpy_img = img_to_array(img)
+        img_batch = np.expand_dims(numpy_img, axis=0)
+        img_list.append(img_batch.astype('float16'))
+
+    return np.vstack(img_list)
 
 
-### GET AND PREPARE IMAGES ###
-
-images = []
-
-for url in tqdm.tqdm(df['content']):
-    response = requests.get(url)
-    img = Image.open(BytesIO(response.content))
-    img = img.resize((224, 224))
-    numpy_img = img_to_array(img)
-    img_batch = np.expand_dims(numpy_img, axis=0)
-    images.append(img_batch.astype('float16'))
-
-images = np.vstack(images)
+# GET IMAGE FOR TRAINING #
+images = get_images('Training.json')
 print(images.shape)
 
+# GET IMAGE FOR TEST #
+
+images_to_test = get_images('Test.json')
+print(images_to_test.shape)
+
 # In[ ]:
-
-
-# In[ ]:
-
+data = get_df('Training.json')
 
 ### RANDOM IMAGES PLOT ###
 
 random_id = np.random.randint(0, images.shape[0], 4)
 f, axes = plt.subplots(1, 4, sharex=True, sharey=True, figsize=(16, 10))
 
-for ax, img, title in zip(axes.ravel(), images[random_id], df['label'][random_id]):
+for ax, img, title in zip(axes.ravel(), images[random_id], data['label'][random_id]):
     ax.imshow(array_to_img(img))
     ax.set_title(title)
 
@@ -101,22 +95,20 @@ for layer in vgg_conv.layers:
 
 # In[ ]:
 
-
-### ENCODE LABEL ###
-
-Y = np_utils.to_categorical((df.label.values == 'Crack') + 0)
+# ENCODE LABEL #
+Y = np_utils.to_categorical((data.label.values == 'Crack') + 0)
 
 # In[ ]:
 
 
-### CREATE TRAIN TEST ###
+# CREATE TRAIN TEST #
 
 X_train, X_test, y_train, y_test = train_test_split(images, Y, random_state=42, test_size=0.2)
 
 # In[ ]:
 
 
-### MODIFY VGG STRUCTURE ###
+# MODIFY VGG STRUCTURE #
 
 x = vgg_conv.output
 x = GlobalAveragePooling2D()(x)
@@ -160,10 +152,6 @@ print(classification_report(np.argmax(y_test, axis=1), np.argmax(model.predict(X
 
 # In[ ]:
 
-
-# In[ ]:
-
-
 def plot_confusion_matrix(cm, classes, title='Confusion matrix', cmap=plt.cm.Blues):
     cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
@@ -187,23 +175,13 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', cmap=plt.cm.Blu
 
 # In[ ]:
 
-
 cnf_matrix = confusion_matrix(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test / 255), axis=1))
 plt.figure(figsize=(7, 7))
-plot_confusion_matrix(cnf_matrix, classes=df.label.unique(), title="Confusion matrix")
+plot_confusion_matrix(cnf_matrix, classes=data.label.unique(), title="Confusion matrix")
 plt.show()
 
 
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[ ]:
-
-
-### CREATE FUNCTION TO DRAW ANOMALIES ###
+# CREATE FUNCTION TO DRAW ANOMALIES #
 
 def plot_activation(img):
     pred = model.predict(img[np.newaxis, :, :, :])
@@ -226,29 +204,11 @@ def plot_activation(img):
     plt.imshow(img.astype('float32').reshape(img.shape[0], img.shape[1], 3))
     plt.imshow(out, cmap='jet', alpha=0.35)
     plt.title('Crack' if pred_class == 1 else 'No Crack')
+    plt.show()
 
-# In[ ]:
+plot_activation(img_to_array(images_to_test[0]) / 255)
+plot_activation(img_to_array(images_to_test[0]) / 255)
+plot_activation(img_to_array(images_to_test[0]) / 255)
+plot_activation(img_to_array(images_to_test[0]) / 255)
 
-
-# plot_activation(X_test[200] / 255)
-#
-# # In[ ]:
-#
-#
-# plot_activation(X_test[100] / 255)
-#
-# # In[ ]:
-#
-#
-# plot_activation(X_test[134] / 255)
-
-plot_activation(img_to_array(images[0])/255)
-
-plot_activation(img_to_array(images[0])/255)
-plot_activation(img_to_array(images[0])/255)
-plot_activation(img_to_array(images[0])/255)
-# In[ ]:
-
-
-
-
+input('Wait for key...')
