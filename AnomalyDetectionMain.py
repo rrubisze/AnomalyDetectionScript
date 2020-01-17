@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # GOOGLECOLAB NOTEBOOK
-
-# In[ ]:
-
-
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -37,6 +29,7 @@ def get_df(filename):
     print(df.shape)
     df.head()
     return df
+
 
 def get_images(filename):
     img_list = []
@@ -140,9 +133,9 @@ train_datagen.fit(X_train)
 
 # In[ ]:
 
-
+# epoches was 20 before, now it changed for testing
 model.fit_generator(train_datagen.flow(X_train, y_train, batch_size=32),
-                    steps_per_epoch=len(X_train) / 32, epochs=2)
+                    steps_per_epoch=len(X_train) / 32, epochs=20)
 
 # In[ ]:
 
@@ -178,12 +171,11 @@ def plot_confusion_matrix(cm, classes, title='Confusion matrix', cmap=plt.cm.Blu
 cnf_matrix = confusion_matrix(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test / 255), axis=1))
 plt.figure(figsize=(7, 7))
 plot_confusion_matrix(cnf_matrix, classes=data.label.unique(), title="Confusion matrix")
-plt.show()
 
 
 # CREATE FUNCTION TO DRAW ANOMALIES #
 
-def plot_activation(img):
+def plot_activation(img, ax):
     pred = model.predict(img[np.newaxis, :, :, :])
     pred_class = np.argmax(pred)
 
@@ -201,14 +193,20 @@ def plot_activation(img):
     out = np.dot(activation_maps.reshape((img.shape[0] * img.shape[1], 512)), class_weights).reshape(img.shape[0],
                                                                                                      img.shape[1])
 
-    plt.imshow(img.astype('float32').reshape(img.shape[0], img.shape[1], 3))
-    plt.imshow(out, cmap='jet', alpha=0.35)
-    plt.title('Crack' if pred_class == 1 else 'No Crack')
-    plt.show()
+    ax.imshow(img.astype('float32').reshape(img.shape[0], img.shape[1], 3))
+    ax.imshow(out, cmap='jet', alpha=0.35)
+    ax.set_title('Crack' if pred_class == 1 else 'No Crack')
 
-plot_activation(img_to_array(images_to_test[0]) / 255)
-plot_activation(img_to_array(images_to_test[0]) / 255)
-plot_activation(img_to_array(images_to_test[0]) / 255)
-plot_activation(img_to_array(images_to_test[0]) / 255)
 
+fig = plt.figure()
+
+# TESTING IMAGES
+for i in range(len(images_to_test)):
+    # mozna zmienic rozmiar w zaleznosci o ilosci obrazow przygotowanych do testow
+    ax = fig.add_subplot(2, 2, i+1)
+    plot_activation(img_to_array(images_to_test[i]) / 255, ax)
+
+plt.tight_layout()
+# show all figures
+plt.show()
 input('Wait for key...')
